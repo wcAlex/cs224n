@@ -73,8 +73,21 @@ class ParserModel(nn.Module):
         ### 
         ### See the PDF for hints.
 
+        w1 = torch.empty(self.n_features * self.embed_size, self.hidden_size)
+        nn.init.xavier_uniform_(w1, gain=nn.init.calculate_gain('relu'))
+        b1 = torch.empty(self.hidden_size)
+        nn.init.uniform_(b1)
+        self.embed_to_hidden_weight = nn.Parameter(w1)
+        self.embed_to_hidden_bias = nn.Parameter(b1)
 
+        self.dropout = nn.Dropout(dropout_prob)
 
+        w2 = torch.empty(self.hidden_size, self.n_classes)
+        nn.init.xavier_uniform_(w2, gain=nn.init.calculate_gain('sigmoid'))
+        b2 = torch.empty(self.n_classes)
+        nn.init.uniform_(b2)
+        self.hidden_to_logits_weight = nn.Parameter(w2)
+        self.hidden_to_logits_bias= nn.Parameter(b2)
 
         ### END YOUR CODE
 
@@ -107,11 +120,18 @@ class ParserModel(nn.Module):
         ###     View: https://pytorch.org/docs/stable/tensors.html#torch.Tensor.view
         ###     Flatten: https://pytorch.org/docs/stable/generated/torch.flatten.html
 
+        # Flatten w and combine lookups from all batches
+        w_flatten = w.view(-1)
+        x_flatten = torch.index_select(self.embeddings, 0, w_flatten)
+        
+        # Convert back to batches, let view function to figure out n_features * embed_size
+        x = x_flatten.view(w.size()[0], -1)
 
+        assert x.size()[0] == w.size()[0]
+        assert x.size()[1] == w.size()[1] * self.embeddings.size()[1]
 
         ### END YOUR CODE
         return x
-
 
     def forward(self, w):
         """ Run the model forward.
@@ -144,6 +164,10 @@ class ParserModel(nn.Module):
         ###     Matrix product: https://pytorch.org/docs/stable/torch.html#torch.matmul
         ###     ReLU: https://pytorch.org/docs/stable/nn.html?highlight=relu#torch.nn.functional.relu
 
+        x = self.embedding_lookup(w)
+        h = F.relu(torch.matmul(x, self.embed_to_hidden_weight) + self.embed_to_hidden_bias)
+        h = self.dropout(h)
+        logits = torch.matmul(h, self.hidden_to_logits_weight) + self.hidden_to_logits_bias
 
         ### END YOUR CODE
         return logits
