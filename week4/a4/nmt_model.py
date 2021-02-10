@@ -77,13 +77,13 @@ class NMT(nn.Module):
         ###     Dropout Layer:
         ###         https://pytorch.org/docs/stable/nn.html#torch.nn.Dropout
 
-        self.encoder = nn.LSTM(input_size=embed_size, hidden_size=hidden_size, num_layers=1, bias=True, bidirectional=True)
-        self.decoder = nn.LSTM(input_size=embed_size + hidden_size, hidden_size=hidden_size, num_layers=1, bias=True)
-        self.h_projection = nn.Linear(in_features=hidden_size * 2, out_features=hidden_size, bias=False)
-        self.c_projection = nn.Linear(in_features=hidden_size * 2, out_features=hidden_size, bias=False)
-        self.att_projection = nn.Linear(in_features=hidden_size * 2, out_features=hidden_size, bias=False)
-        self.combined_output_projection = nn.Linear(in_features=hidden_size * 3, out_features=hidden_size, bias=False)
-        self.target_vocab_projection = nn.Linear(in_features=hidden_size, out_features=len(vocab.tgt), bias=False)
+        self.encoder = nn.LSTM(input_size=embed_size, hidden_size=self.hidden_size, bias=True, bidirectional=True)
+        self.decoder = nn.LSTMCell(input_size=embed_size+self.hidden_size, hidden_size=self.hidden_size, bias=True)
+        self.h_projection = nn.Linear(in_features=self.hidden_size * 2, out_features=self.hidden_size, bias=False)
+        self.c_projection = nn.Linear(in_features=self.hidden_size * 2, out_features=self.hidden_size, bias=False)
+        self.att_projection = nn.Linear(in_features=self.hidden_size * 2, out_features=self.hidden_size, bias=False)
+        self.target_vocab_projection = nn.Linear(in_features=self.hidden_size, out_features=len(vocab.tgt), bias=False)
+        self.combined_output_projection = nn.Linear(in_features=self.hidden_size * 3, out_features=self.hidden_size, bias=False)
         self.dropout = nn.Dropout(self.dropout_rate)
 
         ### END YOUR CODE
