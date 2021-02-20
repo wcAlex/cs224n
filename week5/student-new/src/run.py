@@ -56,10 +56,11 @@ Don't change above here; write your code below
 
 if args.variant == 'vanilla':
     #pass # TODO [part c]: Make some model here
-    m = model.GPT(mconf)
+    model = model.GPT(mconf)
 elif args.variant == 'synthesizer':
     pass # TODO [part g]: Make some other model here
 
+model.to(device)
 # From here on, your code should be identical independent of which
 # variant (vanilla or synthesizer) has been chosen.
 
@@ -119,7 +120,7 @@ elif args.function == 'finetune':
                       num_workers=4)
 
     finetune_dataset = dataset.NameDataset(pretrain_dataset, open(args.finetune_corpus_path, encoding="utf8").read())
-    t = trainer.Trainer(m, pretrain_dataset, None, tconf)
+    t = trainer.Trainer(model, pretrain_dataset, None, tconf)
     t.train()
 
     torch.save(model.state_dict(), args.writing_params_path)
