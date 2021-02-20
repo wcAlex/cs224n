@@ -168,7 +168,41 @@ class CharCorruptionDataset(Dataset):
 
     def __getitem__(self, idx):
         # TODO [part e]: see spec above
-        raise NotImplementedError
+        raw_doc = self.data[idx]
+
+        # Randomly truncate the document
+        lower_trunc_bound = min(4,len(raw_doc))
+        upper_trunc_bound = min(int(self.block_size * 7/8) + 1, len(raw_doc))
+
+        trunc_length = random.randint(lower_trunc_bound, upper_trunc_bound)
+        doc_start_at = random.randint(0, len(raw_doc) - trunc_length)
+
+        # doc = raw_doc[0:trunc_length]
+        doc = raw_doc[doc_start_at: doc_start_at + trunc_length]
+
+        # mask_length = int(random.uniform(0, 1/2)*len(doc))
+        # mask_length = int(random.gauss(1/4*len(doc), sigma=0.1))
+        # mask_length = max(0, min(len(doc), mask_length))
+        # mask_length = random.randint(int(1/8*len(doc)), int(3/8*len(doc)))
+
+        mask_length = random.randint(int(1/8 * len(doc)), int(3/8 * len(doc)))
+        mask_start_at = random.randint(0, len(doc) - mask_length)
+
+        prefix = doc[0:mask_start_at]
+        masked_content = doc[mask_start_at: mask_start_at + mask_length]
+        suffix = doc[mask_start_at + mask_length:]
+
+        # build the final output pattern
+        res_str = prefix + self.MASK_CHAR + suffix + self.MASK_CHAR + masked_content + self.MASK_CHAR + self.PAD_CHAR * (self.block_size - len(doc) - 3)
+        assert len(res_str) == self.block_size
+        
+        x = res_str[:-1]
+        y = res_str[1:]
+
+        x = torch.tensor([self.stoi[c] for c in x], dtype=torch.long)
+        y = torch.tensor([self.stoi[c] for c in y], dtype=torch.long)
+
+        return x, y
 
 """
 Code under here is strictly for your debugging purposes; feel free to modify
