@@ -121,18 +121,19 @@ elif args.function == 'finetune':
     #         warmup_tokens=512*20
     #         final_tokens=200*len(pretrain_dataset)*block_size
     #         num_workers=4
-    if not args.reading_params_path:
-        tconf = trainer.TrainerConfig(max_epochs=75, batch_size=256, learning_rate=6e-4,
-                      lr_decay=True, warmup_tokens=512*20, final_tokens=200*len(pretrain_dataset)*block_size,
-                      num_workers=4)
-    else:
+
+    if args.reading_params_path:
         model.load_state_dict(torch.load(args.reading_params_path), strict=False)
         tconf = trainer.TrainerConfig(max_epochs=10, batch_size=256, learning_rate=6e-4,
                       lr_decay=True, warmup_tokens=512*20, final_tokens=200*len(pretrain_dataset)*block_size,
                       num_workers=4)
+    else:
+        tconf = trainer.TrainerConfig(max_epochs=75, batch_size=256, learning_rate=6e-4,
+                      lr_decay=True, warmup_tokens=512*20, final_tokens=200*len(pretrain_dataset)*block_size,
+                      num_workers=4)
 
     finetune_dataset = dataset.NameDataset(pretrain_dataset, open(args.finetune_corpus_path, encoding="utf8").read())
-    t = trainer.Trainer(model, pretrain_dataset, None, tconf)
+    t = trainer.Trainer(model, finetune_dataset, None, tconf)
     t.train()
 
     torch.save(model.state_dict(), args.writing_params_path)
@@ -151,6 +152,8 @@ elif args.function == 'evaluate':
             x = torch.tensor([pretrain_dataset.stoi[s] for s in x], dtype=torch.long)[None,...].to(device)
             pred = utils.sample(model, x, 32, sample=False)[0]
             completion = ''.join([pretrain_dataset.itos[int(i)] for i in pred])
+            # Chi, remove below line after debugging.
+            print('Predict Raw: {} for input {}'.format(completion, line))
             pred = completion.split('⁇')[1]
             predictions.append(pred)
             fout.write(pred + '\n')
