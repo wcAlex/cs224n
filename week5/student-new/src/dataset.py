@@ -177,8 +177,8 @@ class CharCorruptionDataset(Dataset):
         trunc_length = random.randint(lower_trunc_bound, upper_trunc_bound)
         doc_start_at = random.randint(0, len(raw_doc) - trunc_length)
 
-        # doc = raw_doc[0:trunc_length]
-        doc = raw_doc[doc_start_at: doc_start_at + trunc_length]
+        doc = raw_doc[0:trunc_length]
+        # doc = raw_doc[doc_start_at: doc_start_at + trunc_length]
 
         # mask_length = int(random.uniform(0, 1/2)*len(doc))
         # mask_length = int(random.gauss(1/4*len(doc), sigma=0.1))
@@ -195,7 +195,7 @@ class CharCorruptionDataset(Dataset):
         # build the final output pattern
         res_str = prefix + self.MASK_CHAR + suffix + self.MASK_CHAR + masked_content + self.MASK_CHAR + self.PAD_CHAR * (self.block_size - len(doc) - 3)
         assert len(res_str) == self.block_size
-        
+
         x = res_str[:-1]
         y = res_str[1:]
 
