@@ -39,14 +39,19 @@ class GPT1Config(GPTConfig):
 class Block(nn.Module):
     """ an unassuming Transformer block """
 
-    def __init__(self, config):
+    def __init__(self, config, type):
         super().__init__()
         self.ln1 = nn.LayerNorm(config.n_embd)
         self.ln2 = nn.LayerNorm(config.n_embd)
         if config.additive:
             self.attn = attention.AdditiveSelfAttention(config)
         else:
-            self.attn = attention.CausalSelfAttention(config)
+            if type == "vanilla":
+                self.attn = attention.CausalSelfAttention(config)
+            else:
+                self.attn = attention.SynthesizerAttention(config)
+            
+            print("Attention Block is initialized as {} type".format(type))
         self.mlp = nn.Sequential(
             nn.Linear(config.n_embd, 4 * config.n_embd),
             nn.GELU(),
@@ -62,7 +67,7 @@ class Block(nn.Module):
 class GPT(nn.Module):
     """  the full GPT language model, with a context size of block_size """
 
-    def __init__(self, config):
+    def __init__(self, config, type):
         super().__init__()
 
         # input embedding stem
@@ -70,7 +75,7 @@ class GPT(nn.Module):
         self.pos_emb = nn.Parameter(torch.zeros(1, config.block_size, config.n_embd))
         self.drop = nn.Dropout(config.embd_pdrop)
         # transformer
-        self.blocks = nn.Sequential(*[Block(config) for _ in range(config.n_layer)])
+        self.blocks = nn.Sequential(*[Block(config, type) for _ in range(config.n_layer)])
         # decoder head
         self.ln_f = nn.LayerNorm(config.n_embd)
         self.head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
